@@ -48,9 +48,9 @@ export interface ApiMetadata {
 }
 
 export interface ApiUsage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
+  input: number;
+  output: number;
+  total: number;
 }
 
 export interface ApiQuota {
@@ -215,7 +215,10 @@ export type LanguageCode =
  */
 export interface SentimentResult {
   sentiment: 'POSITIVE' | 'NEGATIVE';
+  score: number;
   confidence: number;
+  is_confident: boolean;
+  confidence_threshold: number;
 }
 
 /**
@@ -268,4 +271,21 @@ export interface BaseClient {
     post<T>(endpoint: string, body: unknown): Promise<T>;
     get<T>(endpoint: string): Promise<T>;
     delete<T>(endpoint: string, body?: unknown): Promise<T>;
+}
+
+export interface ChatCompletion {
+  id: string;
+  object: 'chat.completion';
+  created: number;
+  model: string;
+  choices: Array<{
+    index: number;
+    message: {
+      role: string;
+      content: string;
+    };
+    logprobs: null;
+    finish_reason: string;
+  }>;
+  usage: ApiUsage;
 }

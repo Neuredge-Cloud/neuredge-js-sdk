@@ -1,28 +1,42 @@
 import { BaseCapability } from './base';
-import type { ImageGenerationOptions } from '../types';
+import type { ImageGenerationMode, ImageGenerationOptions } from '../types';
 
 export class ImageCapabilities extends BaseCapability {
-  protected get basePath(): string {
-    return '/image';  // Image endpoints use /image prefix
-  }
+    protected get basePath(): string {
+        return '/image';
+    }
 
-  async generate(prompt: string, options: ImageGenerationOptions = {}): Promise<Blob> {
-    return this.client.post<Blob>(this.endpoint('/generate'), {
-      prompt,
-      mode: options.mode ?? 'standard',
-      negative_prompt: options.negativePrompt,
-      width: options.width ?? 1024,
-      height: options.height ?? 1024,
-      guidance: options.guidance ?? 7.5,
-      seed: options.seed,
-    });
-  }
+    /**
+     * Generate an image based on a text prompt
+     * @param prompt Text description of the desired image
+     * @param options Generation options
+     * @returns Promise<Blob> The generated image
+     */
+    async generate(prompt: string, options?: ImageGenerationOptions): Promise<Blob> {
+        const response = await this.client.post<BlobPart>(this.endpoint('/generate'), {
+            prompt,
+            ...options
+        });
+        return new Blob([response], { type: 'image/png' });
+    }
 
-  async generateFast(prompt: string, options: Omit<ImageGenerationOptions, 'mode'> = {}): Promise<Blob> {
-    return this.generate(prompt, { ...options, mode: 'fast' });
-  }
+    /**
+     * Quick image generation with simplified options
+     * @param prompt Text description of the desired image
+     * @param options Options (excluding mode)
+     * @returns Promise<Blob> The generated image
+     */
+    async generateFast(prompt: string, options?: Omit<ImageGenerationOptions, 'mode'>): Promise<Blob> {
+        return this.generate(prompt, { ...options, mode: 'fast' });
+    }
 
-  async generateStandard(prompt: string, options: Omit<ImageGenerationOptions, 'mode'> = {}): Promise<Blob> {
-    return this.generate(prompt, { ...options, mode: 'standard' });
-  }
+    /**
+     * Standard image generation with full quality
+     * @param prompt Text description of the desired image
+     * @param options Options (excluding mode)
+     * @returns Promise<Blob> The generated image
+     */
+    async generateStandard(prompt: string, options?: Omit<ImageGenerationOptions, 'mode'>): Promise<Blob> {
+        return this.generate(prompt, { ...options, mode: 'standard' });
+    }
 }

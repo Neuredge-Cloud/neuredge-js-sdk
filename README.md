@@ -11,25 +11,23 @@ npm install @neuredge/sdk
 ## Quick Start
 
 ```typescript
-import Neuredge from '@neuredge/sdk';
+import { Neuredge } from '@neuredge/sdk';
 
 const neuredge = new Neuredge({
-  apiKey: 'your-api-key',
+  apiKey: 'your-api-key'
 });
 
 // OpenAI-compatible chat completion
-const completion = await neuredge.chat.completions.create({
-  model: 'llama-70b',
+const completion = await neuredge.openai.chat.completions.create({
+  model: '@cf/meta/llama-2-7b-chat-fp16',
   messages: [
     { role: 'system', content: 'You are a helpful assistant.' },
     { role: 'user', content: 'Hello!' }
   ]
 });
 
-// Native text generation
-const response = await neuredge.text.generate(
-  'Write a short story about a robot.'
-);
+// Text capabilities
+const summary = await neuredge.text.summarize('Long text to summarize...');
 ```
 
 ## Available Models
@@ -114,8 +112,8 @@ const response = await neuredge.text.generate(
 
 ```typescript
 // Standard chat completion
-const chat = await neuredge.chat.completions.create({
-  model: 'llama-70b',
+const chat = await neuredge.openai.chat.completions.create({
+  model: '@cf/meta/llama-2-7b-chat-fp16',
   messages: [
     { role: 'system', content: 'You are a helpful assistant.' },
     { role: 'user', content: 'What is AI?' }
@@ -125,8 +123,8 @@ const chat = await neuredge.chat.completions.create({
 });
 
 // Streaming chat completion
-const stream = await neuredge.chat.completions.create({
-  model: 'llama-70b',
+const stream = await neuredge.openai.chat.completions.create({
+  model: '@cf/meta/llama-3.1-70b-instruct',
   messages: [{ role: 'user', content: 'Tell me a story' }],
   stream: true
 });
@@ -139,33 +137,17 @@ for await (const chunk of stream) {
 ### Embeddings
 
 ```typescript
-const embeddings = await neuredge.embeddings.create({
-  model: 'bge-large',
+const embeddings = await neuredge.openai.embeddings.create({
+  model: '@cf/baai/bge-large-en-v1.5',
   input: ['Hello world', 'Another text']
 });
 
 console.log(embeddings.data[0].embedding); // Vector representation
 ```
 
-## Native Features
+## Features
 
-### Text Generation
-
-```typescript
-// Basic generation
-const text = await neuredge.text.generate('Write a poem');
-
-// Advanced options
-const customText = await neuredge.text.generate('Write a story', {
-  model: 'llama-70b',
-  temperature: 0.8,
-  maxTokens: 1000,
-  stopSequences: ['\n\n'],
-  format: 'markdown'
-});
-```
-
-### Text Analysis
+### Text Processing
 
 ```typescript
 // Summarization
@@ -174,32 +156,78 @@ const summary = await neuredge.text.summarize(longText);
 // Translation
 const translated = await neuredge.text.translate(
   'Hello world',
-  'es',
-  'en'
+  'es',  // target language
+  'en'   // source language (optional)
 );
 
 // Sentiment analysis
-const sentiment = await neuredge.text.analyzeSentiment(text);
+const sentiment = await neuredge.text.analyzeSentiment(
+  'I love this product, it works great!'
+);
+console.log(sentiment.sentiment); // 'POSITIVE' or 'NEGATIVE'
+console.log(sentiment.confidence); // confidence score
 ```
 
-### Vector Operations
+### Vector Store Operations
 
 ```typescript
-// Create embeddings
-const vector = await neuredge.vector.embed('Your text here');
-
-// Similarity search
-const similar = await neuredge.vector.findSimilar(vector, {
-  collection: 'my-vectors',
-  limit: 5
+// Create an index
+await neuredge.vector.createIndex({
+  name: 'my-vectors',
+  dimension: 384, // Using BGE small dimension
+  metric: 'cosine'
 });
 
-// Vector storage
-await neuredge.vector.store(vector, {
-  id: 'doc1',
-  collection: 'my-vectors',
-  metadata: { source: 'article' }
+// Add vectors
+const addResult = await neuredge.vector.addVectors('my-vectors', [
+  {
+    id: '1',
+    values: new Array(384).fill(0.1)
+  }
+], {
+  consistency: {
+    enabled: true,
+    maxRetries: 3,
+    retryDelay: 1000
+  }
 });
+
+// Search vectors
+const searchResults = await neuredge.vector.searchVector(
+  'my-vectors',
+  new Array(384).fill(0.1),
+  {
+    topK: 10,
+    consistency: {
+      enabled: true
+    }
+  }
+);
+```
+
+### Image Generation
+
+```typescript
+// Fast mode - Quick generation with default settings
+const fastImage = await neuredge.image.generateFast(
+  'A simple sketch of a cat'
+);
+
+// Standard mode with full options
+const standardImage = await neuredge.image.generate(
+  'A magical forest with glowing mushrooms',
+  {
+    mode: 'standard',
+    width: 1024,
+    height: 768,
+    guidance: 8.5,
+    negativePrompt: 'dark, scary, spooky'
+  }
+);
+
+// Save the generated images (Node.js example)
+const fs = await import('fs/promises');
+await fs.writeFile('image.png', Buffer.from(await standardImage.arrayBuffer()));
 ```
 
 ## API Reference
@@ -210,21 +238,31 @@ await neuredge.vector.store(vector, {
 interface ClientConfig {
   apiKey: string;
   baseUrl?: string;
-  timeout?: number;
-  maxRetries?: number;
 }
 ```
 
-### Models
-
-Available models for different tasks:
+### Vector Store Types
 
 ```typescript
-// Chat models
-type ChatModel = 'llama-70b' | 'llama-8b' | 'mistral-7b';
+interface VectorIndex {
+  name: string;
+  dimension: number;
+  metric: 'cosine' | 'euclidean' | 'dot';
+}
 
-// Embedding models
-type EmbeddingModel = 'bge-base' | 'bge-small' | 'bge-large';
+interface Vector {
+  id: string | number;
+  values: number[];
+}
+
+interface VectorOptions {
+  topK?: number;
+  consistency?: {
+    enabled: boolean;
+    maxRetries?: number;
+    retryDelay?: number;
+  };
+}
 ```
 
 ### Response Types
@@ -261,6 +299,19 @@ interface Embedding {
     prompt_tokens: number;
     total_tokens: number;
   };
+}
+```
+
+### Image Generation Options
+
+```typescript
+interface ImageGenerationOptions {
+  mode?: 'fast' | 'standard';  // Generation mode
+  width?: number;              // 512-1024px
+  height?: number;             // 512-1024px
+  guidance?: number;           // 1-20, controls prompt adherence
+  negativePrompt?: string;     // Things to avoid in generation
+  seed?: number;               // For reproducible results
 }
 ```
 
