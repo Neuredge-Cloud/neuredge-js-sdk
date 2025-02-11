@@ -1,0 +1,35 @@
+{
+  "name": "@neuredge/sdk",
+  "version": "0.1.0",
+  "description": "Neuredge JavaScript SDK",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest",
+    "example": "ts-node examples/index.ts",
+    "test:integration": "ts-node tests/integration/index.ts",
+    "test:all": "npm run test && npm run test:integration"
+  },
+  "keywords": [
+    "neuredge",
+    "ai",
+    "sdk"
+  ],
+  "author": "Neuredge",
+  "license": "MIT",
+  "dependencies": {
+    "colors": "^1.4.0",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.17",
+    "cross-env": "^7.0.3",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.0.1",
+    "typescript": "^5.2.2",
+    "vitest": "^0.34.6"
+  }
+}
